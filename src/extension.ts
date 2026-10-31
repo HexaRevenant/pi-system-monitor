@@ -3,7 +3,8 @@ import { getMetricIcons, hasNerdFont, shouldUseNerdFont } from "./core/font.js"
 import type { Monitor } from "./pi/monitor.js"
 import { createMonitor } from "./pi/monitor.js"
 import { hasBelowStatusRail, installBelowStatusRail } from "./pi/rail.js"
-import type { PanelSection, PanelStyle } from "./panel/render.js"
+import { MONITOR_USAGE, parseMonitorCommand } from "./pi/monitor-command.js"
+import type { PanelStyle } from "./panel/render.js"
 
 const WIDGET_KEY = "pi-system-monitor"
 const STYLE_SLOT = Symbol.for("gentle-pi.card-style")
@@ -104,47 +105,42 @@ export default function piSystemMonitor(pi: ExtensionAPI): void {
         ctx.ui.notify("System monitor is not active in this session", "warning")
         return
       }
-      const [action = "", rawSection] = args.trim().toLowerCase().split(/\s+/).filter(Boolean)
-      const sections: readonly PanelSection[] = ["metrics", "git", "usage"]
-      const section = sections.find((candidate) => candidate === rawSection)
-
-      if (action === "refresh") {
-        active.monitor.refresh()
-        ctx.ui.notify("System monitor refreshed", "info")
-        return
+      const command = parseMonitorCommand(args)
+      switch (command.kind) {
+        case "toggle-card": {
+          const next = !active.monitor.isVisible()
+          active.monitor.setVisible(next)
+          ctx.ui.notify(`System monitor ${next ? "on" : "off"}`, "info")
+          return
+        }
+        case "set-visible":
+          active.monitor.setVisible(command.visible)
+          ctx.ui.notify(`System monitor ${command.visible ? "on" : "off"}`, "info")
+          return
+        case "refresh":
+          active.monitor.refresh()
+          ctx.ui.notify("System monitor refreshed", "info")
+          return
+        case "toggle-section":
+          active.monitor.toggleSection(command.section)
+          ctx.ui.notify(`System monitor ${command.section} toggled`, "info")
+          return
+        case "set-section":
+          active.monitor.setSection(command.section, command.collapsed)
+          ctx.ui.notify(`System monitor ${command.section} ${command.collapsed ? "collapsed" : "expanded"}`, "info")
+          return
+        case "expand-all":
+          active.monitor.expandAll()
+          ctx.ui.notify("System monitor sections expanded", "info")
+          return
+        case "collapse-all":
+          active.monitor.collapseAll()
+          ctx.ui.notify("System monitor sections collapsed", "info")
+          return
+        case "usage":
+          ctx.ui.notify(MONITOR_USAGE, "warning")
+          return
       }
-      if (action === "on" || action === "off") {
-        active.monitor.setVisible(action === "on")
-        ctx.ui.notify(`System monitor ${action}`, "info")
-        return
-      }
-      if (action === "expand" && rawSection === "all") {
-        active.monitor.expandAll()
-        ctx.ui.notify("System monitor sections expanded", "info")
-        return
-      }
-      if (action === "collapse" && rawSection === "all") {
-        active.monitor.collapseAll()
-        ctx.ui.notify("System monitor sections collapsed", "info")
-        return
-      }
-      if ((action === "toggle" || action === "collapse" || action === "expand") && section !== undefined) {
-        if (action === "toggle") active.monitor.toggleSection(section)
-        else active.monitor.setSection(section, action === "collapse")
-        const state = action === "collapse" ? "collapsed" : action === "expand" ? "expanded" : "toggled"
-        ctx.ui.notify(`System monitor ${section} ${state}`, "info")
-        return
-      }
-      if (action === "") {
-        const next = !active.monitor.isVisible()
-        active.monitor.setVisible(next)
-        ctx.ui.notify(`System monitor ${next ? "on" : "off"}`, "info")
-        return
-      }
-      ctx.ui.notify(
-        "Usage: /monitor [on|off|refresh|toggle <metrics|git|usage>|collapse <metrics|git|usage>|expand <metrics|git|usage>|expand all]",
-        "warning",
-      )
     },
   })
 }

@@ -1,0 +1,38 @@
+{
+  "name": "pi-system-monitor",
+  "version": "0.1.0",
+  "description": "Gentle Shell / Pi sidebar monitor for system metrics, git state, clock, and provider quotas",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "files": [
+    "index.ts",
+    "src",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --outDir dist --noEmit false --declaration false",
+    "install-extension": "tsx scripts/install.ts",
+    "uninstall-extension": "tsx scripts/uninstall.ts"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@earendil-works/pi-tui": "^1.4.0",
+    "systeminformation": "^5.33.8",
+    "koffi": "^3.2.1"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^1.4.0",
+    "@types/node": "^26.4.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}

@@ -28,4 +28,11 @@ describe("monitor command parser", () => {
       assert.deepEqual(parseMonitorCommand(args), { kind: "usage" }, args)
     }
   })
+
+  it("preserves the baseline case-insensitive grammar", () => {
+    assert.deepEqual(parseMonitorCommand("ON"), { kind: "set-visible", visible: true })
+    assert.deepEqual(parseMonitorCommand("Refresh"), { kind: "refresh" })
+    assert.deepEqual(parseMonitorCommand("Toggle Git"), { kind: "toggle-section", section: "git" })
+    assert.deepEqual(parseMonitorCommand("EXPAND ALL"), { kind: "expand-all" })
+  })
 })

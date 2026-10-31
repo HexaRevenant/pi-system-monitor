@@ -21,7 +21,7 @@ export type MonitorCommand =
  * `collapse all extra` all return `usage`.
  */
 export function parseMonitorCommand(args: string): MonitorCommand {
-  const tokens = args.trim().split(/\s+/).filter((token) => token.length > 0)
+  const tokens = args.trim().toLowerCase().split(/\s+/).filter((token) => token.length > 0)
   if (tokens.length === 0) return { kind: "toggle-card" }
   if (tokens.length > 2) return { kind: "usage" }
 

@@ -27,7 +27,7 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 | T9 | Publish the public repository and verify the first push | S2 | inline | published |
 | T10 | Make the metrics, git, and usage sections collapsible | S7 | inline | 5581059 |
 | T11 | Fix the two native review findings: strict `/monitor` arity and case-insensitive parsing | S1, S7 | inline | 1edef12, 7129fdf |
-| T12 | Prepare `pi-system-monitor@0.1.0` as a Pi npm package and trilingual README | S2 | inline | pending |
+| T12 | Prepare `pi-system-monitor@0.1.0` as a Pi npm package and trilingual README | S2 | inline | 5a23f59 |
 
 ## Log
 

@@ -95,4 +95,52 @@ describe("rail injection", () => {
     installBelowStatusRail(tui, () => card(["CARD"]))
     assert.equal(rendered.length, 1)
   })
+
+  it("routes a click on a card row to the card and delegates every other click", () => {
+    const baseClicks: unknown[] = []
+    const base: SidebarRail = {
+      render: () => ["STATUS"],
+      handleMouse: (event) => {
+        baseClicks.push(event)
+        return { handled: true, source: "status" }
+      },
+    }
+    const parts = new Map<string, SidebarRail>([["footer", base]])
+    const { tui } = fakeTui(parts)
+    const toggled: number[] = []
+    installBelowStatusRail(tui, () => ({
+      render: () => ["CARD0", "CARD1", "CARD2"],
+      handleRow: (row) => {
+        if (row !== 1) return false
+        toggled.push(row)
+        return true
+      },
+    }))
+
+    const wrapper = parts.get("footer")
+    wrapper?.render(40)
+    assert.deepEqual(wrapper?.handleMouse?.({ type: "click", button: "left", y: 3 }), { handled: true, render: true })
+    assert.deepEqual(toggled, [1])
+
+    assert.deepEqual(wrapper?.handleMouse?.({ type: "click", button: "left", y: 0 }), { handled: true, source: "status" })
+    assert.deepEqual(wrapper?.handleMouse?.({ type: "move", y: 3 }), { handled: true, source: "status" })
+    assert.equal(baseClicks.length, 2)
+  })
+
+  it("maps card rows from zero when the Status card is empty", () => {
+    const parts = new Map<string, SidebarRail>([["footer", { render: () => [] }]])
+    const { tui } = fakeTui(parts)
+    let clicked = -1
+    installBelowStatusRail(tui, () => ({
+      render: () => ["HEADER"],
+      handleRow: (row) => {
+        clicked = row
+        return true
+      },
+    }))
+    const wrapper = parts.get("footer")
+    wrapper?.render(40)
+    wrapper?.handleMouse?.({ type: "click", button: "left", y: 0 })
+    assert.equal(clicked, 0)
+  })
 })

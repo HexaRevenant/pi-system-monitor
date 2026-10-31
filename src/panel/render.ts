@@ -31,6 +31,7 @@ export type PanelTheme = {
 export type PanelStyle = "neon" | "float"
 
 export type PanelIcons = {
+  title: string
   cpu: string
   ram: string
   gpu: string
@@ -39,20 +40,29 @@ export type PanelIcons = {
   git: string
 }
 
+export type PanelSection = "metrics" | "git" | "usage"
+
+export type PanelHeader = { section: PanelSection; row: number }
+
+export type PanelLayout = { lines: string[]; headers: PanelHeader[] }
+
 export type PanelOptions = {
   locale?: string
   style?: PanelStyle
   maxChanges?: number
   gauges?: boolean
   icons?: PanelIcons
+  collapsed?: ReadonlySet<PanelSection>
 }
 
 const BRAND = "✿"
+const HEADING_ROLE = "accent"
 const GAUGE_CELLS = 6
 const METRIC_LABEL_WIDTH = 7
 const DEFAULT_MAX_CHANGES = 3
 
 const defaultIcons: PanelIcons = {
+  title: unicodeIcons.title,
   cpu: unicodeIcons.cpu,
   ram: unicodeIcons.ram,
   gpu: unicodeIcons.gpu,
@@ -93,40 +103,64 @@ function metricLines(metrics: SystemMetrics, labels: ReturnType<typeof getPanelL
   return lines
 }
 
-function gitLines(git: GitStatus | undefined, labels: ReturnType<typeof getPanelLabels>, locale: string, theme: PanelTheme, maxChanges: number, icons: PanelIcons): string[] {
+function metricSummary(metrics: SystemMetrics, labels: ReturnType<typeof getPanelLabels>): string {
+  return [
+    `${labels.cpu} ${formatPercent(metrics.cpuPercent)}`,
+    `${labels.ram} ${formatPercent(metrics.memoryPercent)}`,
+    `${labels.gpu} ${formatPercent(metrics.gpuPercent)}`,
+  ].join(" · ")
+}
+
+function gitSummary(git: GitStatus, locale: string): string {
+  return formatGitStatusLine(git, getGitStatusLabels(locale))
+}
+
+function gitDetailLines(git: GitStatus, locale: string, theme: PanelTheme, maxChanges: number): string[] {
   const copy = getGitStatusLabels(locale)
-  if (git === undefined) return []
-  const summary = formatGitStatusLine(git, copy)
   const { visible, hidden } = visibleChanges(git.changes, maxChanges)
   return [
-    `${theme.fg("muted", `${icons.git} ${labels.git}`.padEnd(METRIC_LABEL_WIDTH))}${summary}`,
     ...visible.map((change) => theme.fg("dim", `  ${formatGitFileLine(change)}`)),
     ...(hidden > 0 ? [theme.fg("dim", `  ${formatGitOverflowLine(hidden, copy)}`)] : []),
   ]
 }
 
-function usageLines(usage: UsageSnapshot | undefined, locale: string, theme: PanelTheme): string[] {
-  if (usage === undefined) return []
-  const heading = (text: string) => theme.fg("accent", theme.bold(text))
+type UsageSection = { heading: string; summary: string; lines: string[] }
+
+function usageSection(usage: UsageSnapshot | undefined, locale: string, theme: PanelTheme): UsageSection | undefined {
+  if (usage === undefined) return undefined
 
   if (usage.kind === "codex") {
     const copy = getCodexQuotaLabels(locale)
     const windows: string[] = []
+    const summary: string[] = []
     const primary = usage.quota.primary
     const secondary = usage.quota.secondary
-    if (primary !== undefined) windows.push(`${copy.session} ${primary.usedPercent}% ${copy.used}`)
-    if (secondary !== undefined) windows.push(`${copy.weekly} ${secondary.usedPercent}% ${copy.used}`)
-    if (windows.length === 0) windows.push(copy.unavailable)
+    if (primary !== undefined) {
+      windows.push(`${copy.session} ${primary.usedPercent}% ${copy.used}`)
+      summary.push(`${primary.usedPercent}%`)
+    }
+    if (secondary !== undefined) {
+      windows.push(`${copy.weekly} ${secondary.usedPercent}% ${copy.used}`)
+      summary.push(`${secondary.usedPercent}%`)
+    }
+    if (windows.length === 0) {
+      windows.push(copy.unavailable)
+      summary.push(copy.unavailable)
+    }
     const credits = usage.quota.credits?.balance
-    return [
-      heading(copy.heading),
-      ...windows.map((line) => theme.fg("text", `  ${line}`)),
-      ...(credits === undefined ? [] : [theme.fg("text", `  ${copy.creditBalance}: ${credits}`)]),
-    ]
+    return {
+      heading: copy.heading,
+      summary: summary.join(" · "),
+      lines: [
+        ...windows.map((line) => theme.fg("text", `  ${line}`)),
+        ...(credits === undefined ? [] : [theme.fg("text", `  ${copy.creditBalance}: ${credits}`)]),
+      ],
+    }
   }
 
   const copy = getOpenCodeGoLabels(locale)
   const rows: string[] = []
+  const summary: string[] = []
   for (const [label, window] of [
     [copy.rolling, usage.usage.rolling],
     [copy.weekly, usage.usage.weekly],
@@ -134,13 +168,21 @@ function usageLines(usage: UsageSnapshot | undefined, locale: string, theme: Pan
   ] as const) {
     if (window === undefined) {
       rows.push(`${label} ${copy.unavailable}`)
+      summary.push(copy.unavailable)
       continue
     }
     const remaining = window.remainingPercent === undefined ? copy.unavailable : `${window.remainingPercent}%`
+    summary.push(remaining)
     const status = window.status === undefined ? "" : ` · ${copy.status}: ${window.status}`
     rows.push(`${label} ${remaining} ${copy.remaining}${status}`)
   }
-  return [heading(copy.heading), ...rows.map((line) => theme.fg("text", `  ${line}`))]
+  return { heading: copy.heading, summary: summary.join(" · "), lines: rows.map((line) => theme.fg("text", `  ${line}`)) }
+}
+
+function sectionHeading(icon: string, heading: string, collapsedSummary: string | undefined, theme: PanelTheme): string {
+  const glyph = collapsedSummary === undefined ? "▼" : "▶"
+  const head = theme.fg(HEADING_ROLE, theme.bold(`${glyph} ${icon} ${heading}`))
+  return collapsedSummary === undefined ? head : `${head}  ${theme.fg("muted", collapsedSummary)}`
 }
 
 function pad(content: string, inner: number): string {
@@ -153,7 +195,7 @@ function neonCard(title: string, body: string[], theme: PanelTheme, width: numbe
   const titleText = truncateToWidth(`${BRAND} ${title}`, Math.max(0, inner - 3), "")
   const rule = "─".repeat(Math.max(0, width - 5 - visibleWidth(titleText)))
   return [
-    theme.fg("border", "╭─ ") + theme.fg("accent", theme.bold(titleText)) + theme.fg("border", ` ${rule}╮`),
+    theme.fg("border", "╭─ ") + theme.fg(HEADING_ROLE, theme.bold(titleText)) + theme.fg("border", ` ${rule}╮`),
     ...body.map((line) => theme.fg("border", "│ ") + pad(line, inner) + theme.fg("border", " │")),
     theme.fg("border", `╰${"─".repeat(Math.max(0, width - 2))}╯`),
   ]
@@ -161,31 +203,60 @@ function neonCard(title: string, body: string[], theme: PanelTheme, width: numbe
 
 function floatCard(title: string, body: string[], theme: PanelTheme, width: number): string[] {
   const inner = width - 2
-  const head = theme.fg("accent", theme.bold(truncateToWidth(`${BRAND} ${title}`, inner, "")))
+  const head = theme.fg(HEADING_ROLE, theme.bold(truncateToWidth(`${BRAND} ${title}`, inner, "")))
   return [
     theme.fg("border", "▎ ") + pad(head, inner),
     ...body.map((line) => theme.fg("border", "▎ ") + pad(line, inner)),
   ]
 }
 
-/** Pure renderer: a snapshot in, card lines out. Every line is exactly `width` columns. */
-export function renderPanel(snapshot: PanelSnapshot, theme: PanelTheme, width: number, options: PanelOptions = {}): string[] {
+/** Pure renderer: the card lines plus the clickable section header rows. */
+export function renderPanelLayout(snapshot: PanelSnapshot, theme: PanelTheme, width: number, options: PanelOptions = {}): PanelLayout {
   const style = options.style ?? "neon"
   const inner = width - (style === "neon" ? 4 : 2)
-  if (inner < 12) return []
+  if (inner < 12) return { lines: [], headers: [] }
 
   const locale = options.locale ?? currentLocale()
   const labels = getPanelLabels(locale)
   const gauges = options.gauges ?? true
   const icons = options.icons ?? defaultIcons
   const maxChanges = Math.max(0, options.maxChanges ?? DEFAULT_MAX_CHANGES)
+  const collapsed = options.collapsed ?? new Set<PanelSection>()
 
-  const body = [
-    theme.fg("text", clockLine(snapshot.now, locale)),
-    ...metricLines(snapshot.metrics, labels, theme, gauges, icons),
-    ...gitLines(snapshot.git, labels, locale, theme, maxChanges, icons),
-    ...usageLines(snapshot.usage, locale, theme),
-  ]
+  const body: string[] = []
+  const headers: PanelHeader[] = []
+  const pushHeader = (section: PanelSection, icon: string, heading: string, summary: string): boolean => {
+    const isCollapsed = collapsed.has(section)
+    // One frame/title line precedes the body in both card styles.
+    headers.push({ section, row: body.length + 1 })
+    body.push(sectionHeading(icon, heading, isCollapsed ? summary : undefined, theme))
+    return isCollapsed
+  }
 
-  return style === "float" ? floatCard(labels.title, body, theme, width) : neonCard(labels.title, body, theme, width)
+  body.push(theme.fg("text", clockLine(snapshot.now, locale)))
+
+  if (!pushHeader("metrics", icons.title, labels.system, metricSummary(snapshot.metrics, labels))) {
+    body.push(...metricLines(snapshot.metrics, labels, theme, gauges, icons))
+  }
+
+  if (snapshot.git !== undefined) {
+    const summary = gitSummary(snapshot.git, locale)
+    if (!pushHeader("git", icons.git, getGitStatusLabels(locale).heading, summary)) {
+      body.push(theme.fg("muted", `  ${summary}`))
+      body.push(...gitDetailLines(snapshot.git, locale, theme, maxChanges))
+    }
+  }
+
+  const usage = usageSection(snapshot.usage, locale, theme)
+  if (usage !== undefined && !pushHeader("usage", "◷", usage.heading, usage.summary)) {
+    body.push(...usage.lines)
+  }
+
+  const lines = style === "float" ? floatCard(labels.title, body, theme, width) : neonCard(labels.title, body, theme, width)
+  return { lines, headers }
+}
+
+/** Pure renderer: a snapshot in, card lines out. Every line is exactly `width` columns. */
+export function renderPanel(snapshot: PanelSnapshot, theme: PanelTheme, width: number, options: PanelOptions = {}): string[] {
+  return renderPanelLayout(snapshot, theme, width, options).lines
 }

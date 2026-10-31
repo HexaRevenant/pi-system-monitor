@@ -6,7 +6,7 @@ import { fetchOpenCodeGoUsage, type OpenCodeGoUsage } from "../core/opencode-go-
 import { createQuotaPoller } from "../core/quota-poller.js"
 import type { CardSource } from "./rail.js"
 import { CODEX_PROVIDER_ID, OPENCODE_GO_PROVIDER_ID, readCodexCredential, readOpenCodeGoCredential } from "./credentials.js"
-import { renderPanel, type PanelIcons, type PanelStyle, type PanelTheme, type UsageSnapshot } from "../panel/render.js"
+import { renderPanelLayout, type PanelHeader, type PanelIcons, type PanelSection, type PanelStyle, type PanelTheme, type UsageSnapshot } from "../panel/render.js"
 
 const CLOCK_REFRESH_MS = 1_000
 const SYSTEM_REFRESH_MS = 2_000
@@ -46,6 +46,11 @@ export type Monitor = {
   stop: () => void
   setVisible: (visible: boolean) => void
   isVisible: () => boolean
+  toggleSection: (section: PanelSection) => void
+  setSection: (section: PanelSection, collapsed: boolean) => void
+  expandAll: () => void
+  collapseAll: () => void
+  collapsedSections: () => readonly PanelSection[]
   refresh: () => void
 }
 
@@ -56,6 +61,8 @@ export function createMonitor(options: MonitorOptions): Monitor {
   let codexQuota: CodexQuota = EMPTY_CODEX
   let goUsage: OpenCodeGoUsage = {}
   let visible = true
+  let collapsed = new Set<PanelSection>()
+  let headers: PanelHeader[] = []
   let revision = 0
   let started = false
   let lastQuotaProvider: string | undefined
@@ -133,15 +140,29 @@ export function createMonitor(options: MonitorOptions): Monitor {
   }
 
   const card = (): CardSource => ({
-    render: (width: number) =>
-      visible
-        ? renderPanel({ now: new Date(), metrics, git, usage: usage() }, options.theme, width, {
-            locale,
-            style: options.style(),
-            icons: options.icons,
-          })
-        : [],
-    digest: () => `${revision}`,
+    render: (width: number) => {
+      if (!visible) {
+        headers = []
+        return []
+      }
+      const layout = renderPanelLayout(
+        { now: new Date(), metrics, git, usage: usage() },
+        options.theme,
+        width,
+        { locale, style: options.style(), icons: options.icons, collapsed },
+      )
+      headers = layout.headers
+      return layout.lines
+    },
+    digest: () => `${revision}|${[...collapsed].join(",")}`,
+    handleRow: (row: number) => {
+      const header = headers.find((candidate) => candidate.row === row)
+      if (header === undefined) return false
+      if (collapsed.has(header.section)) collapsed.delete(header.section)
+      else collapsed.add(header.section)
+      bump()
+      return true
+    },
   })
 
   const tick = (refresh: () => Promise<void>, interval: number) => {
@@ -177,6 +198,25 @@ export function createMonitor(options: MonitorOptions): Monitor {
       bump()
     },
     isVisible: () => visible,
+    toggleSection(section: PanelSection) {
+      if (collapsed.has(section)) collapsed.delete(section)
+      else collapsed.add(section)
+      bump()
+    },
+    setSection(section: PanelSection, next: boolean) {
+      if (next) collapsed.add(section)
+      else collapsed.delete(section)
+      bump()
+    },
+    expandAll() {
+      collapsed = new Set()
+      bump()
+    },
+    collapseAll() {
+      collapsed = new Set(["metrics", "git", "usage"])
+      bump()
+    },
+    collapsedSections: () => [...collapsed],
     refresh() {
       void refreshMetrics()
       void refreshGit()

@@ -9,6 +9,7 @@ This is the Gentle Shell port of [`opencode-monitor`](https://github.com/HexaRev
 - **Clock**: local time and date, refreshed every second.
 - **System**: CPU use and temperature, RAM used/total, GPU use and temperature, GPU VRAM used/total, and download/upload rates. Sampled every 2 seconds; GPU and temperature sources use the same short-lived cache as the OpenCode monitor.
 - **Git**: current branch, ahead/behind, changed-file count, up to three changed paths, and the hidden remainder. Read from `git status` in the session directory every 2 seconds.
+- **Collapsible sections**: the Sistema, Git, and Uso headings collapse to a one-line summary when you click them in the fullscreen rail, or through `/monitor toggle <section>`.
 - **Codex usage**: session and weekly windows, plus the credit balance when it is present. Shown only while the active Pi provider is `openai-codex`; refreshed every five minutes.
 - **OpenCode Go usage**: rolling 5-hour, weekly, and monthly remaining percentages with their status. Shown only while the active Pi provider is `opencode-go`; refreshed every five minutes.
 
@@ -65,6 +66,11 @@ Only a symlink that resolves to this checkout is removed.
 | `/monitor on` | Show the card. |
 | `/monitor off` | Hide the card. |
 | `/monitor refresh` | Refresh metrics, git, and quotas immediately. |
+| `/monitor toggle <metrics\|git\|usage>` | Collapse or expand one section. |
+| `/monitor collapse <section>` | Collapse one section. |
+| `/monitor expand <section>` | Expand one section. |
+| `/monitor collapse all` | Collapse every section. |
+| `/monitor expand all` | Expand every section. |
 
 ## Configuration
 
@@ -107,6 +113,7 @@ Es el port a Gentle Shell de [`opencode-monitor`](https://github.com/HexaRevenan
 - **Reloj**: hora y fecha locales, actualizadas cada segundo.
 - **Sistema**: uso y temperatura de CPU, RAM usada/total, uso y temperatura de GPU, VRAM usada/total y velocidades de descarga/subida. Se muestrean cada 2 segundos; GPU y temperatura usan la misma caché breve que el monitor de OpenCode.
 - **Git**: rama actual, ahead/behind, cantidad de archivos modificados, hasta tres rutas y el resto resumido. Se lee con `git status` en el directorio de la sesión cada 2 segundos.
+- **Secciones colapsables**: los encabezados Sistema, Git y Uso se colapsan a una línea de resumen al hacer clic en el rail de pantalla completa, o con `/monitor toggle <sección>`.
 - **Uso de Codex**: ventanas de sesión y semanal, más el saldo de créditos cuando existe. Solo aparece si el proveedor activo de Pi es `openai-codex`; se actualiza cada cinco minutos.
 - **Uso de OpenCode Go**: porcentajes restantes de las ventanas móvil de 5 horas, semanal y mensual, con su estado. Solo aparece si el proveedor activo es `opencode-go`; se actualiza cada cinco minutos.
 
@@ -163,6 +170,11 @@ Solo se elimina un symlink que resuelva a este checkout.
 | `/monitor on` | Muestra la tarjeta. |
 | `/monitor off` | Oculta la tarjeta. |
 | `/monitor refresh` | Refresca métricas, git y cuotas de inmediato. |
+| `/monitor toggle <metrics\|git\|usage>` | Colapsa o expande una sección. |
+| `/monitor collapse <sección>` | Colapsa una sección. |
+| `/monitor expand <sección>` | Expande una sección. |
+| `/monitor collapse all` | Colapsa todas las secciones. |
+| `/monitor expand all` | Expande todas las secciones. |
 
 ### Configuración
 

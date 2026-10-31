@@ -25,6 +25,8 @@ export type CardSource = {
   render(width: number): string[]
   digest?(): string
   invalidate?(): void
+  /** Handles a click on one card line (0-based, card coordinates). */
+  handleRow?(row: number): boolean
 }
 
 type SidebarState = { parts?: Map<string, SidebarRail> }
@@ -91,13 +93,20 @@ export function installBelowStatusRail(host: unknown, card: () => CardSource): (
     }
   }
 
+  let lastOffset = 0
+
   const wrapper: SidebarRail = {
     [WRAPPER_MARK]: true,
     render(width: number): string[] {
       const base = safeRender(original, width)
       const lines = safeRender(currentCard(), width)
-      if (lines.length === 0) return base
-      return base.some((line) => line.trim() !== "") ? [...base, "", ...lines] : lines
+      if (lines.length === 0) {
+        lastOffset = 0
+        return base
+      }
+      const hasBase = base.some((line) => line.trim() !== "")
+      lastOffset = hasBase ? base.length + 1 : 0
+      return hasBase ? [...base, "", ...lines] : lines
     },
     digest(): string {
       return `${safeDigest(original)}|${safeDigest(currentCard())}`
@@ -115,6 +124,11 @@ export function installBelowStatusRail(host: unknown, card: () => CardSource): (
       }
     },
     handleMouse(event: unknown): unknown {
+      const click = event as { type?: string; button?: string; y?: number } | undefined
+      if (click?.type === "click" && click.button === "left" && typeof click.y === "number") {
+        const row = click.y - lastOffset
+        if (row >= 0 && currentCard()?.handleRow?.(row) === true) return { handled: true, render: true }
+      }
       return original.handleMouse?.(event)
     },
   }

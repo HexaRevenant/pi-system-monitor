@@ -10,6 +10,7 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 - **S4** — Content: "Sistema: CPU, RAM, GPU, VRAM, temperatura, red", "Git: rama, ahead/behind y cambios", "Reloj y fecha", "Cuotas Codex / OpenCode Go" (`L5`).
 - **S5** — Pi auth, not OpenCode auth: quotas read `<agentDir>/auth.json` (`PI_CODING_AGENT_DIR` or `~/.pi/agent`). Codex is gated on provider `openai-codex`; the ChatGPT account id comes from the access-token JWT claim `https://api.openai.com/auth` → `chatgpt_account_id`. OpenCode Go is gated on provider `opencode-go` and reads that provider's stored key.
 - **S6** — Graceful absence: when the rail part or the sidebar internals are missing, the extension renders nothing and never throws into the host render path. When a metric or credential is unavailable, its line says so without hiding the rest.
+- **S7** — Collapsible sections: "reeciueda que deben ser colapasables" (`L9`). The Sistema, Git, and Uso sections collapse to their heading plus a compact summary, and expand again, by clicking the heading or through `/monitor`.
 
 ## Tasks
 
@@ -24,6 +25,7 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 | T7 | Test the new logic and run the full suite and typecheck | S1–S6 | inline | 0dbbd0e |
 | T8 | Write README (EN/ES), compatibility note, install/uninstall scripts | S2, S3 | inline | 0dbbd0e |
 | T9 | Publish the public repository and verify the first push | S2 | inline | published |
+| T10 | Make the metrics, git, and usage sections collapsible | S7 | inline | pending |
 
 ## Log
 
@@ -35,3 +37,5 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 - **L6** — Second questionnaire: name "pi-system-monitor", placement "Tarjeta propia debajo de Status (experimental)", repository "Público".
 - **L7** — Evidence: commits `d096ab9`, `6009806`, `22357ec`, `0dbbd0e`; 102 tests pass; `tsc --noEmit` clean; jiti 2.7.0 loads `index.ts` with a function default export. Published at https://github.com/HexaRevenant/pi-system-monitor (public, default branch `main`).
 - **L8** — Installation into the live gentle-shell home is pending explicit authorization to write `/home/hexa/.gentle-shell/agent/extensions/pi-system-monitor`.
+- **L9** — "reeciueda que deben ser colapasables": the panel sections must collapse and expand.
+- **L10** — Review evidence: the native assess returned high risk (`process_boundary`, `scripts/install.ts`); lineage `review-86d503caf2bd246b` froze the pre-collapse candidate. The package-local binary and the project-local `.pi/gentle-ai/models.json` unblocked the relay, but the reviewer run failed on a provider stream error (`review-readability: Stream ended without finish_reason`) before any mutation. The collapsible change supersedes that candidate, so a fresh lineage is required after it lands.

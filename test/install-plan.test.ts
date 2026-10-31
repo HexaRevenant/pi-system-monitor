@@ -31,4 +31,10 @@ describe("install plan", () => {
     assert.equal(resolveAgentHome({ env: {}, home: "/home" }), "/home/.gentle-shell/agent")
     assert.equal(extensionLink("/agent"), "/agent/extensions/pi-system-monitor")
   })
+
+  it("expands a leading tilde in an explicit agent home", () => {
+    assert.equal(resolveAgentHome({ flag: "~/agent", home: "/home/test" }), "/home/test/agent")
+    assert.equal(resolveAgentHome({ flag: "~", home: "/home/test" }), "/home/test")
+    assert.equal(resolveAgentHome({ env: { GENTLE_SHELL_HOME: "~/gentle" }, home: "/home/test" }), "/home/test/gentle")
+  })
 })

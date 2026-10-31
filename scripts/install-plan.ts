@@ -36,9 +36,15 @@ export type AgentHomeInput = {
 export function resolveAgentHome(input: AgentHomeInput = {}): string {
   const env = input.env ?? process.env
   const home = input.home ?? homedir()
-  if (input.flag !== undefined && input.flag.trim() !== "") return input.flag
-  if (env.GENTLE_SHELL_HOME !== undefined && env.GENTLE_SHELL_HOME.trim() !== "") return env.GENTLE_SHELL_HOME
-  if (env.PI_CODING_AGENT_DIR !== undefined && env.PI_CODING_AGENT_DIR.trim() !== "") return env.PI_CODING_AGENT_DIR
+  const expand = (value: string): string => {
+    if (value === "~") return home
+    if (value.startsWith("~/")) return join(home, value.slice(2))
+    if (process.platform === "win32" && value.startsWith("~\\")) return join(home, value.slice(2))
+    return value
+  }
+  if (input.flag !== undefined && input.flag.trim() !== "") return expand(input.flag)
+  if (env.GENTLE_SHELL_HOME !== undefined && env.GENTLE_SHELL_HOME.trim() !== "") return expand(env.GENTLE_SHELL_HOME)
+  if (env.PI_CODING_AGENT_DIR !== undefined && env.PI_CODING_AGENT_DIR.trim() !== "") return expand(env.PI_CODING_AGENT_DIR)
   return join(home, ".gentle-shell", "agent")
 }
 

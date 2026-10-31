@@ -25,7 +25,7 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 | T7 | Test the new logic and run the full suite and typecheck | S1–S6 | inline | 0dbbd0e |
 | T8 | Write README (EN/ES), compatibility note, install/uninstall scripts | S2, S3 | inline | 0dbbd0e |
 | T9 | Publish the public repository and verify the first push | S2 | inline | published |
-| T10 | Make the metrics, git, and usage sections collapsible | S7 | inline | pending |
+| T10 | Make the metrics, git, and usage sections collapsible | S7 | inline | 5581059 |
 
 ## Log
 
@@ -39,3 +39,4 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 - **L8** — Installation into the live gentle-shell home is pending explicit authorization to write `/home/hexa/.gentle-shell/agent/extensions/pi-system-monitor`.
 - **L9** — "reeciueda que deben ser colapasables": the panel sections must collapse and expand.
 - **L10** — Review evidence: the native assess returned high risk (`process_boundary`, `scripts/install.ts`); lineage `review-86d503caf2bd246b` froze the pre-collapse candidate. The package-local binary and the project-local `.pi/gentle-ai/models.json` unblocked the relay, but the reviewer run failed on a provider stream error (`review-readability: Stream ended without finish_reason`) before any mutation. The collapsible change supersedes that candidate, so a fresh lineage is required after it lands.
+- **L11** — Collapsible sections and shared heading color landed in `5581059`: Sistema, Git, and Uso collapse by click or `/monitor`; the card title and the three headings share the `accent` role. 110 tests pass and `tsc --noEmit` is clean.

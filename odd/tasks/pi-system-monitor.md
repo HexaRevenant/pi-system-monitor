@@ -26,6 +26,7 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 | T8 | Write README (EN/ES), compatibility note, install/uninstall scripts | S2, S3 | inline | 0dbbd0e |
 | T9 | Publish the public repository and verify the first push | S2 | inline | published |
 | T10 | Make the metrics, git, and usage sections collapsible | S7 | inline | 5581059 |
+| T11 | Fix the two native review findings: strict `/monitor` arity and case-insensitive parsing | S1, S7 | inline | 1edef12, 7129fdf |
 
 ## Log
 
@@ -40,3 +41,4 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 - **L9** — "reeciueda que deben ser colapasables": the panel sections must collapse and expand.
 - **L10** — Review evidence: the native assess returned high risk (`process_boundary`, `scripts/install.ts`); lineage `review-86d503caf2bd246b` froze the pre-collapse candidate. The package-local binary and the project-local `.pi/gentle-ai/models.json` unblocked the relay, but the reviewer run failed on a provider stream error (`review-readability: Stream ended without finish_reason`) before any mutation. The collapsible change supersedes that candidate, so a fresh lineage is required after it lands.
 - **L11** — Collapsible sections and shared heading color landed in `5581059`: Sistema, Git, and Uso collapse by click or `/monitor`; the card title and the three headings share the `accent` role. 110 tests pass and `tsc --noEmit` is clean.
+- **L12** — Native review of `5581059`: three lenses plus the refuter ran. The refuter found two real candidate-caused defects: (1) `/monitor` silently ignored trailing arguments, and (2) the parser regression broke case-insensitive commands such as `/monitor ON`. Fixed in `1edef12` (strict arity, pure parser, tests) and `7129fdf` (restore `.toLowerCase()`, mixed-case tests). 113 tests pass and `tsc --noEmit` is clean. The targeted validator cannot be submitted: the provider renders it as a top-level `validation_request` while the Pi facade accepts only `nextTransition.collect.inputs`, so the exact current binding is rejected as stale. No validator verdict was fabricated; lineage `review-f53f5406f4bc49aa` remains `correction_required`.

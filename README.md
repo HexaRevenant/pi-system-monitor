@@ -47,6 +47,8 @@ npm run install-extension -- --yes
 3. `PI_CODING_AGENT_DIR`
 4. `~/.gentle-shell/agent`
 
+Install into every agent home your sessions actually load. A plain Pi session reads `~/.pi/agent/extensions`; gentle-shell defaults to `~/.gentle-shell/agent`. Run the script once per home, for example `npm run install-extension -- --agent-home ~/.pi/agent --yes`.
+
 Restart gentle-shell, or run `/reload` inside it, after installing or updating.
 
 ### Uninstall
@@ -150,6 +152,8 @@ npm run install-extension -- --yes
 2. `GENTLE_SHELL_HOME`
 3. `PI_CODING_AGENT_DIR`
 4. `~/.gentle-shell/agent`
+
+Instala en cada agent home que tus sesiones carguen de verdad. Una sesión de Pi normal lee `~/.pi/agent/extensions`; gentle-shell usa `~/.gentle-shell/agent` por defecto. Ejecuta el script una vez por home, por ejemplo `npm run install-extension -- --agent-home ~/.pi/agent --yes`.
 
 Reinicia gentle-shell, o ejecuta `/reload` dentro, después de instalar o actualizar.
 

@@ -32,6 +32,22 @@ The card follows Gentle Shell's active card style (`neon` outline or `float` lef
 
 ## Install
 
+### Install from npm
+
+```bash
+pi install npm:pi-system-monitor@0.1.0
+```
+
+For an isolated gentle-shell home, point Pi at that home:
+
+```bash
+PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.1.0
+```
+
+Then restart gentle-shell, or run `/reload` inside it. Pi installs the package dependencies and supplies `@earendil-works/pi-tui`.
+
+### Install from a checkout
+
 ```bash
 npm install
 npm run install-extension -- --dry-run
@@ -138,6 +154,22 @@ La tarjeta sigue el estilo activo de Gentle Shell (`neon` con marco o `float` co
 
 ### Instalación
 
+#### Instalación desde npm
+
+```bash
+pi install npm:pi-system-monitor@0.1.0
+```
+
+Para un home aislado de gentle-shell, apunta Pi a ese home:
+
+```bash
+PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.1.0
+```
+
+Luego reinicia gentle-shell o ejecuta `/reload` dentro. Pi instala las dependencias y provee `@earendil-works/pi-tui`.
+
+#### Instalación desde un checkout
+
 ```bash
 npm install
 npm run install-extension -- --dry-run
@@ -205,5 +237,127 @@ npm run typecheck
 La suite cubre el renderizador puro, el adaptador de credenciales de Pi, el envoltorio del rail, el poller de cuotas y los módulos de núcleo reutilizados. Pi carga los fuentes TypeScript directamente con jiti, así que no hay paso de build para uso local.
 
 ### Licencia
+
+MIT. Ver [LICENSE](LICENSE).
+
+---
+
+## Português
+
+Cartão lateral ao vivo para **Gentle Shell** (gentle-pi / Pi): métricas do sistema, estado do git, relógio e cotas do Codex / OpenCode Go, pintado logo abaixo do cartão Status.
+
+Este é o port para Gentle Shell do [`opencode-monitor`](https://github.com/HexaRevenant/opencode-monitor). Reutiliza o núcleo independente de render daquele projeto (MIT, mesmo autor) e substitui o renderizador OpenCode/opentui por uma extensão do Pi que pinta no rail do Gentle Shell.
+
+### O que mostra
+
+- **Relógio**: hora e data locais, atualizadas a cada segundo.
+- **Sistema**: uso e temperatura da CPU, RAM usada/total, uso e temperatura da GPU, VRAM usada/total e velocidades de download/upload. Amostradas a cada 2 segundos; GPU e temperatura usam o mesmo cache curto do monitor do OpenCode.
+- **Git**: branch atual, ahead/behind, quantidade de arquivos alterados, até três caminhos e o restante resumido. Lido com `git status` no diretório da sessão a cada 2 segundos.
+- **Seções recolhíveis**: os títulos Sistema, Git e Uso recolhem para uma linha de resumo com clique no rail de tela cheia, ou com `/monitor toggle <seção>`.
+- **Uso do Codex**: janelas de sessão e semanal, mais o saldo de créditos quando existe. Só aparece quando o provedor ativo do Pi é `openai-codex`; atualizado a cada cinco minutos.
+- **Uso do OpenCode Go**: percentuais restantes das janelas móvel de 5 horas, semanal e mensal, com seu status. Só aparece quando o provedor ativo é `opencode-go`; atualizado a cada cinco minutos.
+
+Valores indisponíveis aparecem como `—` (ou `indisponível` numa seção de cota). A ausência de uma credencial nunca esconde o resto do cartão.
+
+### Onde o cartão é pintado
+
+O rail de tela cheia do Gentle Shell renderiza quatro seções fixas: `footer` (o cartão Status), `jobs`, `agents` e `todo`. Uma extensão de terceiros não pode registrar uma seção nova, então esta extensão **envolve a parte `footer` existente** e acrescenta seu cartão depois do Status. O wrapper lê o estado de processo em `Symbol.for("gentle-pi.experimental-sidebar.state")` e nunca importa internals do Gentle Shell.
+
+O cartão segue o estilo ativo do Gentle Shell (`neon` com moldura ou `float` com barra à esquerda), lido de `Symbol.for("gentle-pi.card-style")`.
+
+**Nota de compatibilidade.** O wrapper do rail é experimental por definição. É escrito de forma defensiva: se faltar o símbolo de estado, a parte `footer` ou um callback de render, ou se algum lançar erro, o cartão Status original é devolvido intacto e o monitor fica inerte. O cartão só é pintado no rail de tela cheia (o ponto de corte padrão do Gentle Shell é 140 colunas); o modo regular não tem rail.
+
+### Requisitos
+
+- Gentle Shell com gentle-pi 4.5.1 / Pi 1.4.0 (testado), ou um Pi 1.x compatível.
+- Node.js 18 ou superior.
+- `git` no `PATH` para a seção Git (opcional).
+- Credenciais opcionais: Codex precisa de uma entrada OAuth `openai-codex` e OpenCode Go de uma entrada `opencode-go` no `auth.json` do Pi.
+
+### Instalação
+
+#### Instalação via npm
+
+```bash
+pi install npm:pi-system-monitor@0.1.0
+```
+
+Para um home isolado do gentle-shell:
+
+```bash
+PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.1.0
+```
+
+Depois reinicie o gentle-shell ou execute `/reload`. O Pi instala as dependências e fornece `@earendil-works/pi-tui`.
+
+#### Instalação a partir de um checkout
+
+```bash
+npm install
+npm run install-extension -- --dry-run
+npm run install-extension -- --yes
+```
+
+`install-extension` cria um único symlink, `<agent-home>/extensions/pi-system-monitor`, apontando para este checkout. Nunca apaga um diretório real e se recusa a substituir um link de outro checkout salvo com `--force`.
+
+`<agent-home>` resolve nesta ordem:
+
+1. `--agent-home <path>`
+2. `GENTLE_SHELL_HOME`
+3. `PI_CODING_AGENT_DIR`
+4. `~/.gentle-shell/agent`
+
+Instale em cada agent home que suas sessões carregam de verdade. Uma sessão normal do Pi lê `~/.pi/agent/extensions`; o gentle-shell usa `~/.gentle-shell/agent` por padrão. Execute o script uma vez por home, por exemplo `npm run install-extension -- --agent-home ~/.pi/agent --yes`.
+
+Reinicie o gentle-shell, ou execute `/reload` dentro, depois de instalar ou atualizar.
+
+#### Desinstalação
+
+```bash
+npm run uninstall-extension -- --dry-run
+npm run uninstall-extension -- --yes
+```
+
+Só é removido um symlink que resolva para este checkout.
+
+### Comandos
+
+| Comando | Efeito |
+| --- | --- |
+| `/monitor` | Mostra ou oculta o cartão. |
+| `/monitor on` | Mostra o cartão. |
+| `/monitor off` | Oculta o cartão. |
+| `/monitor refresh` | Atualiza métricas, git e cotas imediatamente. |
+| `/monitor toggle <metrics\|git\|usage>` | Recolhe ou expande uma seção. |
+| `/monitor collapse <seção>` | Recolhe uma seção. |
+| `/monitor expand <seção>` | Expande uma seção. |
+| `/monitor collapse all` | Recolhe todas as seções. |
+| `/monitor expand all` | Expande todas as seções. |
+
+### Configuração
+
+| Variável | Efeito |
+| --- | --- |
+| `GENTLE_SHELL_HOME` | Agent home usado pelos scripts de instalação e desinstalação. |
+| `PI_CODING_AGENT_DIR` | Agent home do Pi; também é onde se lê `auth.json`. |
+| `OPENCODE_MONITOR_NERD_FONT=1` | Usa ícones Nerd Font no Windows. Linux e macOS só os usam se houver uma Nerd Font instalada. |
+
+### Privacidade
+
+- `auth.json` é lido localmente e apenas para o provedor ativo. As credenciais nunca são armazenadas, registradas ou escritas.
+- O painel do Codex envia o token OAuth e o account id do ChatGPT, ambos derivados da credencial guardada, para `https://chatgpt.com/backend-api/wham/usage`.
+- O painel do OpenCode Go envia sua chave de API apenas para `https://opencode.ai/zen/go/v1/usage`. Esse endpoint é observado, não uma API estável documentada.
+- As métricas do sistema vêm de `systeminformation` e dos contadores de plataforma que o `opencode-monitor` já usa; nenhuma telemetria é enviada.
+
+### Desenvolvimento
+
+```bash
+npm test
+npm run typecheck
+```
+
+A suíte cobre o renderizador puro, o adaptador de credenciais do Pi, o wrapper do rail, o poller de cotas e os módulos de núcleo reutilizados. O Pi carrega os fontes TypeScript diretamente com jiti, então não há passo de build para uso local.
+
+### Licença
 
 MIT. Ver [LICENSE](LICENSE).

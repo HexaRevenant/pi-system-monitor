@@ -3,14 +3,36 @@
   "version": "0.1.0",
   "description": "Gentle Shell / Pi sidebar monitor for system metrics, git state, clock, and provider quotas",
   "license": "MIT",
+  "author": "HexaRevenant",
   "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "gentle-shell",
+    "gentle-pi",
+    "system-monitor",
+    "system-metrics",
+    "tui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HexaRevenant/pi-system-monitor.git"
+  },
+  "homepage": "https://github.com/HexaRevenant/pi-system-monitor#readme",
+  "bugs": {
+    "url": "https://github.com/HexaRevenant/pi-system-monitor/issues"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
   "exports": {
     ".": "./index.ts"
   },
   "files": [
     "index.ts",
     "src",
-    "scripts",
     "README.md",
     "LICENSE"
   ],
@@ -19,18 +41,25 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --outDir dist --noEmit false --declaration false",
     "install-extension": "tsx scripts/install.ts",
-    "uninstall-extension": "tsx scripts/uninstall.ts"
+    "uninstall-extension": "tsx scripts/uninstall.ts",
+    "prepublishOnly": "npm test && npm run typecheck"
   },
   "engines": {
     "node": ">=18"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-tui": "*"
+  },
   "dependencies": {
-    "@earendil-works/pi-tui": "^1.4.0",
-    "systeminformation": "^5.33.8",
-    "koffi": "^3.2.1"
+    "koffi": "^3.2.1",
+    "systeminformation": "^5.33.8"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^1.4.0",
+    "@earendil-works/pi-tui": "^1.4.0",
     "@types/node": "^26.4.1",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"

@@ -27,6 +27,7 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 | T9 | Publish the public repository and verify the first push | S2 | inline | published |
 | T10 | Make the metrics, git, and usage sections collapsible | S7 | inline | 5581059 |
 | T11 | Fix the two native review findings: strict `/monitor` arity and case-insensitive parsing | S1, S7 | inline | 1edef12, 7129fdf |
+| T12 | Prepare `pi-system-monitor@0.1.0` as a Pi npm package and trilingual README | S2 | inline | pending |
 
 ## Log
 
@@ -43,3 +44,4 @@ A Pi extension that renders live system metrics, git state, clock, and provider 
 - **L11** — Collapsible sections and shared heading color landed in `5581059`: Sistema, Git, and Uso collapse by click or `/monitor`; the card title and the three headings share the `accent` role. 110 tests pass and `tsc --noEmit` is clean.
 - **L12** — Native review of `5581059`: three lenses plus the refuter ran. The refuter found two real candidate-caused defects: (1) `/monitor` silently ignored trailing arguments, and (2) the parser regression broke case-insensitive commands such as `/monitor ON`. Fixed in `1edef12` (strict arity, pure parser, tests) and `7129fdf` (restore `.toLowerCase()`, mixed-case tests). 113 tests pass and `tsc --noEmit` is clean. The targeted validator cannot be submitted: the provider renders it as a top-level `validation_request` while the Pi facade accepts only `nextTransition.collect.inputs`, so the exact current binding is rejected as stale. No validator verdict was fabricated; lineage `review-f53f5406f4bc49aa` remains `correction_required`.
 - **L13** — Decision A: the user accepted the native review as incomplete. No validator verdict was claimed, and no review authority was abandoned. The two findings remain fixed in `1edef12` and `7129fdf`; the card is live after installing the extension in both agent homes (`dec6fbb`). Stale lineages stay untouched until an explicit abandon request.
+- **L14** — User asked for an npm install path as a new package. `pi-system-monitor` is free on npm. Prepared `package.json` with a `pi` extension manifest, `pi-package` keyword, `@earendil-works/pi-tui` as a `*` peer/dev dependency, `systeminformation`/`koffi` as runtime dependencies, `prepublishOnly` tests, repository metadata, and a trilingual README (EN/ES/PT). `npm pack --dry-run` includes 26 files (121.1 kB unpacked). Publish is blocked on npm authentication (`npm whoami` returns E401); no package was published.

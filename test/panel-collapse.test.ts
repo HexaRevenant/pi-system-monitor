@@ -59,7 +59,7 @@ describe("collapsible panel sections", () => {
     for (const header of layout.headers) {
       assert.match(layout.lines[header.row] ?? "", /^[│▎ ]*[▼▶]/)
     }
-    assert.deepEqual(layout.headers.map((header) => header.section), ["metrics", "git", "usage"])
+    assert.deepEqual(layout.headers.map((header) => header.section), ["metrics", "usage", "git"])
   })
 
   it("collapses metrics to one heading with a summary and hides its rows", () => {

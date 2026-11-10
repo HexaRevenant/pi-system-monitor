@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { getMetricIcons, hasNerdFont, shouldUseNerdFont } from "./core/font.js"
 import type { Monitor } from "./pi/monitor.js"
 import { createMonitor } from "./pi/monitor.js"
-import { hasBelowStatusRail, installBelowStatusRail } from "./pi/rail.js"
+import { hasRailCard, installRailCard } from "./pi/rail.js"
 import { MONITOR_USAGE, parseMonitorCommand } from "./pi/monitor-command.js"
 import type { PanelStyle } from "./panel/render.js"
 
@@ -52,13 +52,13 @@ export default function piSystemMonitor(pi: ExtensionAPI): void {
         }
 
         const ensure = () => {
-          if (hasBelowStatusRail(tui)) {
+          if (hasRailCard(tui)) {
             stopRetry()
             return
           }
           disposeRail()
-          disposeRail = installBelowStatusRail(tui, monitor.card)
-          if (hasBelowStatusRail(tui)) stopRetry()
+          disposeRail = installRailCard(tui, monitor.card)
+          if (hasRailCard(tui)) stopRetry()
         }
 
         const cleanup = () => {

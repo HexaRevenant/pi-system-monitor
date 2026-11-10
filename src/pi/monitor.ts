@@ -4,9 +4,9 @@ import { currentLocale } from "../core/locale.js"
 import { readMetrics, type SystemMetrics } from "../core/metrics.js"
 import { fetchOpenCodeGoUsage, type OpenCodeGoUsage } from "../core/opencode-go-usage.js"
 import { createQuotaPoller } from "../core/quota-poller.js"
-import type { CardSource } from "./rail.js"
+import type { CardRenderContext, CardSource } from "./rail.js"
 import { CODEX_PROVIDER_ID, OPENCODE_GO_PROVIDER_ID, readCodexCredential, readOpenCodeGoCredential } from "./credentials.js"
-import { renderPanelLayout, type PanelHeader, type PanelIcons, type PanelSection, type PanelStyle, type PanelTheme, type UsageSnapshot } from "../panel/render.js"
+import { headerAction, nextDensity, renderPanelLayout, type PanelDensity, type PanelIcons, type PanelLayout, type PanelSection, type PanelStyle, type PanelTheme, type UsageSnapshot } from "../panel/render.js"
 
 const CLOCK_REFRESH_MS = 1_000
 const SYSTEM_REFRESH_MS = 2_000
@@ -62,7 +62,8 @@ export function createMonitor(options: MonitorOptions): Monitor {
   let goUsage: OpenCodeGoUsage = {}
   let visible = true
   let collapsed = new Set<PanelSection>()
-  let headers: PanelHeader[] = []
+  let density: PanelDensity = "comfortable"
+  let layout: PanelLayout = { lines: [], headers: [] }
   let revision = 0
   let started = false
   let lastQuotaProvider: string | undefined
@@ -140,26 +141,32 @@ export function createMonitor(options: MonitorOptions): Monitor {
   }
 
   const card = (): CardSource => ({
-    render: (width: number) => {
+    render: (width: number, context?: CardRenderContext) => {
       if (!visible) {
-        headers = []
+        layout = { lines: [], headers: [] }
         return []
       }
-      const layout = renderPanelLayout(
+      const rendered = renderPanelLayout(
         { now: new Date(), metrics, git, usage: usage() },
         options.theme,
         width,
-        { locale, style: options.style(), icons: options.icons, collapsed },
+        { locale, style: options.style(), icons: options.icons, collapsed, density, chrome: context?.chrome ?? "host" },
       )
-      headers = layout.headers
-      return layout.lines
+      layout = rendered
+      return rendered.lines
     },
-    digest: () => `${revision}|${[...collapsed].join(",")}`,
-    handleRow: (row: number) => {
-      const header = headers.find((candidate) => candidate.row === row)
-      if (header === undefined) return false
-      if (collapsed.has(header.section)) collapsed.delete(header.section)
-      else collapsed.add(header.section)
+    digest: () => `${revision}|${[...collapsed].join(",")}|${density}`,
+    handleRow: (row: number, column?: number) => {
+      const action = headerAction(layout, row, column)
+      if (action === "none") return false
+      if (action === "toggle-view") {
+        density = nextDensity(density)
+      } else {
+        const header = layout.headers.find((candidate) => candidate.row === row)
+        if (header === undefined) return false
+        if (collapsed.has(header.section)) collapsed.delete(header.section)
+        else collapsed.add(header.section)
+      }
       bump()
       return true
     },

@@ -37,13 +37,13 @@ Click the `↻` next to the Sistema/System heading to cycle four densities: `com
 ### Install from npm
 
 ```bash
-pi install npm:pi-system-monitor@0.1.0
+pi install npm:pi-system-monitor@0.2.0
 ```
 
 For an isolated gentle-shell home, point Pi at that home:
 
 ```bash
-PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.1.0
+PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.2.0
 ```
 
 Then restart gentle-shell, or run `/reload` inside it. Pi installs the package dependencies and supplies `@earendil-works/pi-tui`.
@@ -161,13 +161,13 @@ Un clic en el `↻` junto al encabezado Sistema recorre cuatro densidades: `comf
 #### Instalación desde npm
 
 ```bash
-pi install npm:pi-system-monitor@0.1.0
+pi install npm:pi-system-monitor@0.2.0
 ```
 
 Para un home aislado de gentle-shell, apunta Pi a ese home:
 
 ```bash
-PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.1.0
+PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.2.0
 ```
 
 Luego reinicia gentle-shell o ejecuta `/reload` dentro. Pi instala las dependencias y provee `@earendil-works/pi-tui`.
@@ -285,13 +285,13 @@ Um clique no `↻` ao lado do cabeçalho Sistema percorre quatro densidades: `co
 #### Instalação via npm
 
 ```bash
-pi install npm:pi-system-monitor@0.1.0
+pi install npm:pi-system-monitor@0.2.0
 ```
 
 Para um home isolado do gentle-shell:
 
 ```bash
-PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.1.0
+PI_CODING_AGENT_DIR=~/.gentle-shell/agent pi install npm:pi-system-monitor@0.2.0
 ```
 
 Depois reinicie o gentle-shell ou execute `/reload`. O Pi instala as dependências e fornece `@earendil-works/pi-tui`.

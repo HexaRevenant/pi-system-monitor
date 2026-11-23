@@ -23,7 +23,7 @@ A transparent-chrome rail asks the part for its card groups and paints each grou
 
 Click the `↻` next to the Sistema/System heading to cycle five densities: `comfortable` (one metric per row with byte totals and a dated clock), `compact` (two metrics per row with gauges, summaries inline), `dense` (two per row, no gauges, totals kept), `summary` (one line per section) and `minimal` (the summary without fold glyphs, without the section labels of the lower blocks and without any separator). The folded views put the system-local date and a 24-hour clock in the card header, in the field order the locale defines. Clicking the rest of the heading still folds the section.
 
-**Compatibility note.** The rail wrapper is experimental by definition. It is written defensively: when the state symbol, the `footer` part, or a render callback is missing or throws, the original Status card is returned untouched and the monitor stays inert. The card is only painted in the fullscreen rail (Gentle Shell's default breakpoint is 140 columns); regular mode has no rail to paint into.
+**Compatibility note.** The rail wrapper is experimental by definition. It is written defensively: when the state symbol, the `footer` part, or a render callback is missing or throws, the original Status card is returned untouched and the monitor stays inert. Installation never assumes a launch order: it retries at once, every 250 ms for the first ten seconds, and then on a slow two-second heartbeat that repairs the slot whenever the host registers or rebuilds it. The card is only painted in the fullscreen rail (Gentle Shell's default breakpoint is 140 columns); regular mode has no rail to paint into.
 
 ## Requirements
 
@@ -147,7 +147,7 @@ Un rail de chrome transparente le pide a la parte sus grupos de tarjeta y pinta 
 
 Un clic en el `↻` junto al encabezado Sistema recorre cinco densidades: `comfortable` (una métrica por fila con totales en bytes y la fecha), `compact` (dos métricas por fila con gauge y los resúmenes en línea), `dense` (dos por fila, sin gauges, con totales), `summary` (una línea por sección) y `minimal` (el resumen sin glifos de plegado, sin las etiquetas de sección de los bloques inferiores y sin ningún separador). Las vistas plegadas muestran en el encabezado la fecha local del sistema y la hora en formato 24 h, con el orden de campos que define el locale. Un clic en el resto del encabezado sigue plegando la sección.
 
-**Nota de compatibilidad.** El envoltorio del rail es experimental por definición. Está escrito de forma defensiva: si falta el símbolo de estado, la parte `footer` o un callback de render, o si alguno lanza un error, se devuelve la tarjeta Status original intacta y el monitor queda inerte. La tarjeta solo se pinta en el rail de pantalla completa (el punto de corte por defecto de Gentle Shell es 140 columnas); el modo regular no tiene rail.
+**Nota de compatibilidad.** El envoltorio del rail es experimental por definición. Está escrito de forma defensiva: si falta el símbolo de estado, la parte `footer` o un callback de render, o si alguno lanza un error, se devuelve la tarjeta Status original intacta y el monitor queda inerte. La instalación nunca supone un orden de arranque: reintenta al instante, cada 250 ms durante los primeros diez segundos, y después con un latido lento de dos segundos que repara el slot cada vez que el host lo registra o lo reconstruye. La tarjeta solo se pinta en el rail de pantalla completa (el punto de corte por defecto de Gentle Shell es 140 columnas); el modo regular no tiene rail.
 
 ### Requisitos
 
@@ -271,7 +271,7 @@ Um rail de chrome transparente pede à parte seus grupos de cartão e pinta cada
 
 Um clique no `↻` ao lado do cabeçalho Sistema percorre cinco densidades: `comfortable` (uma métrica por linha com totais em bytes e a data), `compact` (duas métricas por linha com gauge e os resumos em linha), `dense` (duas por linha, sem gauges, com totais), `summary` (uma linha por seção) e `minimal` (o resumo sem glifos de dobra, sem os rótulos de seção dos blocos inferiores e sem nenhum separador). As visões dobradas mostram no cabeçalho a data local do sistema e a hora em formato 24 h, na ordem de campos que o locale define. Um clique no resto do cabeçalho continua dobrando a seção.
 
-**Nota de compatibilidade.** O wrapper do rail é experimental por definição. É escrito de forma defensiva: se faltar o símbolo de estado, a parte `footer` ou um callback de render, ou se algum lançar erro, o cartão Status original é devolvido intacto e o monitor fica inerte. O cartão só é pintado no rail de tela cheia (o ponto de corte padrão do Gentle Shell é 140 colunas); o modo regular não tem rail.
+**Nota de compatibilidade.** O wrapper do rail é experimental por definição. É escrito de forma defensiva: se faltar o símbolo de estado, a parte `footer` ou um callback de render, ou se algum lançar erro, o cartão Status original é devolvido intacto e o monitor fica inerte. A instalação nunca supõe uma ordem de arranque: tenta de imediato, a cada 250 ms durante os primeiros dez segundos, e depois com um batimento lento de dois segundos que repara o slot sempre que o host o registra ou o reconstrói. O cartão só é pintado no rail de tela cheia (o ponto de corte padrão do Gentle Shell é 140 colunas); o modo regular não tem rail.
 
 ### Requisitos
 

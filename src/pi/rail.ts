@@ -54,6 +54,28 @@ export type CardSource = {
   handleRow?(row: number, column?: number): boolean
 }
 
+/** How long the watcher waits between attempts: fast while the host boots, slow forever after. */
+export type RailWatchPolicy = { fastMs: number; fastAttempts: number; slowMs: number }
+
+/** Schedules one attempt and returns its canceller. Injectable so tests drive time. */
+export type RailScheduler = { after(ms: number, run: () => void): () => void }
+
+/**
+ * A host slot can appear or be rebuilt at any point after the extension loads:
+ * a cold start registers the rail late, and a session swap replaces the part.
+ * A fixed retry window gives up exactly when those happen, so the watcher keeps
+ * a slow heartbeat for the whole session instead and repairs the wrapper.
+ */
+export const RAIL_WATCH_POLICY: RailWatchPolicy = { fastMs: 250, fastAttempts: 40, slowMs: 2000 }
+
+const defaultScheduler: RailScheduler = {
+  after(ms, run) {
+    const timer = setTimeout(run, ms)
+    timer.unref?.()
+    return () => clearTimeout(timer)
+  },
+}
+
 type SidebarState = { parts?: Map<string, SidebarRail> }
 type RailHost = { terminal?: Record<symbol, unknown>; requestRender?(): void }
 type RailLayout = { width: number; cardLines: number; offset: number; baseLines: number }
@@ -215,5 +237,38 @@ export function installRailCard(host: unknown, card: () => CardSource): () => vo
       parts.set(key, original)
       requestRender(railHost)
     }
+  }
+}
+
+/**
+ * Keeps calling `ensure` until the returned disposer runs: immediately, then on
+ * the fast interval while the host starts up, then on the slow heartbeat that
+ * repairs a slot the host registered late or rebuilt. The timer is unref'd, so
+ * the watcher never holds the process open.
+ */
+export function watchRail(ensure: () => boolean, scheduler: RailScheduler = defaultScheduler, policy: RailWatchPolicy = RAIL_WATCH_POLICY): () => void {
+  let attempts = 0
+  let cancel: (() => void) | undefined
+  let stopped = false
+
+  const schedule = () => {
+    if (stopped) return
+    const delay = attempts < policy.fastAttempts ? policy.fastMs : policy.slowMs
+    attempts += 1
+    cancel = scheduler.after(delay, () => {
+      cancel = undefined
+      if (stopped) return
+      ensure()
+      schedule()
+    })
+  }
+
+  ensure()
+  schedule()
+
+  return () => {
+    stopped = true
+    cancel?.()
+    cancel = undefined
   }
 }

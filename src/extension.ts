@@ -2,14 +2,12 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { getMetricIcons, hasNerdFont, shouldUseNerdFont } from "./core/font.js"
 import type { Monitor } from "./pi/monitor.js"
 import { createMonitor } from "./pi/monitor.js"
-import { hasRailCard, installRailCard } from "./pi/rail.js"
+import { hasRailCard, installRailCard, watchRail } from "./pi/rail.js"
 import { MONITOR_USAGE, parseMonitorCommand } from "./pi/monitor-command.js"
 import type { PanelStyle } from "./panel/render.js"
 
 const WIDGET_KEY = "pi-system-monitor"
 const STYLE_SLOT = Symbol.for("gentle-pi.card-style")
-const RETRY_MS = 250
-const RETRY_ATTEMPTS = 40
 
 const platform = process.platform as "linux" | "darwin" | "win32"
 const icons = getMetricIcons(shouldUseNerdFont(platform, platform === "win32" ? false : hasNerdFont()))
@@ -43,39 +41,26 @@ export default function piSystemMonitor(pi: ExtensionAPI): void {
         })
 
         let disposeRail = () => {}
-        let retry: ReturnType<typeof setInterval> | undefined
-        let attempts = 0
-
-        const stopRetry = () => {
-          if (retry !== undefined) clearInterval(retry)
-          retry = undefined
-        }
+        let stopWatch = () => {}
 
         const ensure = () => {
-          if (hasRailCard(tui)) {
-            stopRetry()
-            return
-          }
+          if (hasRailCard(tui)) return true
           disposeRail()
           disposeRail = installRailCard(tui, monitor.card)
-          if (hasRailCard(tui)) stopRetry()
+          return hasRailCard(tui)
         }
 
         const cleanup = () => {
-          stopRetry()
+          stopWatch()
           monitor.stop()
           disposeRail()
           disposeRail = () => {}
           if (active?.monitor === monitor) active = undefined
         }
 
-        ensure()
-        retry = setInterval(() => {
-          attempts += 1
-          ensure()
-          if (attempts >= RETRY_ATTEMPTS) stopRetry()
-        }, RETRY_MS)
-        retry.unref?.()
+        // The host registers its rail slots after extensions load and rebuilds
+        // them on a session swap, so installation never assumes a launch order.
+        stopWatch = watchRail(ensure)
 
         active = { monitor, cleanup }
         monitor.start()

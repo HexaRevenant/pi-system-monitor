@@ -1,6 +1,6 @@
 {
   "name": "pi-system-monitor",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Gentle Shell / Pi sidebar monitor for system metrics, git state, clock, and provider quotas",
   "license": "MIT",
   "author": "HexaRevenant",

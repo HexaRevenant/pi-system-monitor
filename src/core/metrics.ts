@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process"
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process"
+import { readFile, readdir } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import si from "systeminformation"
@@ -346,6 +347,109 @@ export function selectGpuMetrics(graphics: { controllers: Array<{
   return result
 }
 
+const LINUX_DRM_ROOT = "/sys/class/drm"
+// hwmon reports millidegrees; a value above this cannot be a plain Celsius
+// reading, so it is converted instead of being shown as thousands of degrees.
+const MILLIDEGREE_THRESHOLD = 200
+
+export type LinuxGpuCounters = {
+  busyPercent?: number | null
+  temperatureMillidegrees?: number | null
+  vramUsedBytes?: number | null
+  vramTotalBytes?: number | null
+}
+
+/**
+ * Maps drm sysfs counters to GPU metrics. Unknown counters stay null: a card
+ * that only reports temperature must not be shown as idle at 0%.
+ */
+export function selectLinuxGpuMetrics(counters: LinuxGpuCounters): GpuMetric {
+  const busy = finite(counters.busyPercent)
+  const millidegrees = finite(counters.temperatureMillidegrees)
+  const vramUsed = finite(counters.vramUsedBytes)
+  const vramTotal = finite(counters.vramTotalBytes)
+  const temperature = millidegrees === null
+    ? null
+    : millidegrees > MILLIDEGREE_THRESHOLD ? millidegrees / 1000 : millidegrees
+  const hasMemory = vramUsed !== null && vramTotal !== null && vramTotal > 0
+  return {
+    gpuPercent: busy === null ? null : Math.min(100, Math.max(0, busy)),
+    gpuTemperatureCelsius: temperature !== null && temperature > 0 ? temperature : null,
+    gpuMemoryUsedBytes: hasMemory ? vramUsed : null,
+    gpuMemoryTotalBytes: hasMemory ? vramTotal : null,
+    gpuMemoryPercent: hasMemory ? (vramUsed! / vramTotal!) * 100 : null,
+  }
+}
+
+let linuxGpuDeviceRoot: string | null | undefined
+
+async function readSysfsNumber(path: string): Promise<number | null> {
+  try {
+    const value = Number((await readFile(path, "utf8")).trim())
+    return Number.isFinite(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+async function resolveLinuxGpuDeviceRoot(): Promise<string | null> {
+  if (linuxGpuDeviceRoot !== undefined) return linuxGpuDeviceRoot
+  linuxGpuDeviceRoot = null
+  try {
+    for (const entry of (await readdir(LINUX_DRM_ROOT)).sort()) {
+      // Card entries only: connectors such as card1-DP-1 expose no counters.
+      if (!/^card\d+$/.test(entry)) continue
+      const deviceRoot = `${LINUX_DRM_ROOT}/${entry}/device`
+      if (await readSysfsNumber(`${deviceRoot}/gpu_busy_percent`) === null) continue
+      linuxGpuDeviceRoot = deviceRoot
+      break
+    }
+  } catch {
+    linuxGpuDeviceRoot = null
+  }
+  return linuxGpuDeviceRoot
+}
+
+async function readLinuxGpuTemperatureMillidegrees(deviceRoot: string): Promise<number | null> {
+  const hwmonRoot = `${deviceRoot}/hwmon`
+  try {
+    for (const entry of (await readdir(hwmonRoot)).sort()) {
+      const value = await readSysfsNumber(`${hwmonRoot}/${entry}/temp1_input`)
+      if (value !== null) return value
+    }
+  } catch {
+    // hwmon is optional; temperature stays unknown.
+  }
+  return null
+}
+
+/**
+ * Live counters for drm drivers that expose the amdgpu sysfs interface.
+ * systeminformation fills GPU utilization, temperature and memory only from
+ * nvidia-smi on Linux, so AMD and other amdgpu-class devices come back as
+ * identity alone and selectGpuMetrics discards them.
+ */
+export async function readLinuxGpuMetrics(): Promise<GpuMetric> {
+  if (process.platform !== "linux") return selectLinuxGpuMetrics({})
+  const deviceRoot = await resolveLinuxGpuDeviceRoot()
+  if (deviceRoot === null) return selectLinuxGpuMetrics({})
+
+  const [busyPercent, temperatureMillidegrees, vramUsedBytes, vramTotalBytes] = await Promise.all([
+    readSysfsNumber(`${deviceRoot}/gpu_busy_percent`),
+    readLinuxGpuTemperatureMillidegrees(deviceRoot),
+    readSysfsNumber(`${deviceRoot}/mem_info_vram_used`),
+    readSysfsNumber(`${deviceRoot}/mem_info_vram_total`),
+  ])
+  return selectLinuxGpuMetrics({ busyPercent, temperatureMillidegrees, vramUsedBytes, vramTotalBytes })
+}
+
+/** True when systeminformation reported identity only and no live GPU value. */
+export function needsLinuxGpuFallback(native: GpuMetric): boolean {
+  return native.gpuPercent === null &&
+    native.gpuTemperatureCelsius === null &&
+    native.gpuMemoryTotalBytes === null
+}
+
 export function readCachedMetric<T>(
   state: CachedMetric<T>,
   reader: () => Promise<T>,
@@ -521,7 +625,10 @@ export async function readMetrics(): Promise<SystemMetrics> {
       ? (memoryUsedBytes / memoryTotalBytes) * 100
       : null
 
-  const gpu = selectGpuMetrics(graphics.status === "fulfilled" ? graphics.value : undefined)
+  const nativeGpu = selectGpuMetrics(graphics.status === "fulfilled" ? graphics.value : undefined)
+  // Fall back to the drm sysfs counters when the native source has nothing
+  // live to report; a no-op off Linux and when no drm card exposes them.
+  const gpu = needsLinuxGpuFallback(nativeGpu) ? await readLinuxGpuMetrics() : nativeGpu
   const macMetrics = mac.status === "fulfilled" ? mac.value : undefined
   const architecture = hardwareArchitecture.status === "fulfilled" ? hardwareArchitecture.value : undefined
   const isAppleSilicon = isMac && architecture === "arm64"

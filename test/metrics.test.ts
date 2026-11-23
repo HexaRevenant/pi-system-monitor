@@ -12,6 +12,8 @@ import {
   readWindowsNetworkFallback,
   readMacMetrics,
   selectGpuMetrics,
+  selectLinuxGpuMetrics,
+  needsLinuxGpuFallback,
   WINDOWS_MEMORY_TIMEOUT_MS,
   WINDOWS_NETWORK_OUTER_TIMEOUT_MS,
   WINDOWS_NETWORK_PROCESS_TIMEOUT_MS,
@@ -254,5 +256,50 @@ describe("metric cache and GPU fallback", () => {
       gpuPercent: null, gpuTemperatureCelsius: null, gpuMemoryUsedBytes: null,
       gpuMemoryTotalBytes: null, gpuMemoryPercent: null,
     })
+  })
+})
+
+describe("Linux drm GPU counters", () => {
+  const empty = {
+    gpuPercent: null, gpuTemperatureCelsius: null, gpuMemoryUsedBytes: null,
+    gpuMemoryTotalBytes: null, gpuMemoryPercent: null,
+  }
+
+  it("maps an idle amdgpu card with carve-out VRAM", () => {
+    const vramUsed = 441126912
+    const vramTotal = 8589934592
+    assert.deepEqual(
+      selectLinuxGpuMetrics({ busyPercent: 0, temperatureMillidegrees: 53000, vramUsedBytes: vramUsed, vramTotalBytes: vramTotal }),
+      {
+        gpuPercent: 0,
+        gpuTemperatureCelsius: 53,
+        gpuMemoryUsedBytes: vramUsed,
+        gpuMemoryTotalBytes: vramTotal,
+        gpuMemoryPercent: (vramUsed / vramTotal) * 100,
+      },
+    )
+  })
+
+  it("keeps unknown counters null instead of reporting idle", () => {
+    assert.deepEqual(selectLinuxGpuMetrics({ temperatureMillidegrees: 42000 }), { ...empty, gpuTemperatureCelsius: 42 })
+    assert.deepEqual(selectLinuxGpuMetrics({}), empty)
+  })
+
+  it("clamps utilization and rejects an empty VRAM total", () => {
+    assert.equal(selectLinuxGpuMetrics({ busyPercent: 137 }).gpuPercent, 100)
+    assert.equal(selectLinuxGpuMetrics({ busyPercent: -5 }).gpuPercent, 0)
+    assert.equal(selectLinuxGpuMetrics({ vramUsedBytes: 1024, vramTotalBytes: 0 }).gpuMemoryTotalBytes, null)
+  })
+
+  it("keeps a plain Celsius reading and drops a zero one", () => {
+    assert.equal(selectLinuxGpuMetrics({ temperatureMillidegrees: 47 }).gpuTemperatureCelsius, 47)
+    assert.equal(selectLinuxGpuMetrics({ temperatureMillidegrees: 0 }).gpuTemperatureCelsius, null)
+  })
+
+  it("only falls back when the native source reported nothing live", () => {
+    assert.equal(needsLinuxGpuFallback(empty), true)
+    assert.equal(needsLinuxGpuFallback({ ...empty, gpuPercent: 12 }), false)
+    assert.equal(needsLinuxGpuFallback({ ...empty, gpuTemperatureCelsius: 45 }), false)
+    assert.equal(needsLinuxGpuFallback({ ...empty, gpuMemoryTotalBytes: 1024 }), false)
   })
 })
